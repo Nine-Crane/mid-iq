@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>中路判断力 · 限时决策训练</title>
+<meta name="description" content="把《王者荣耀》中单的取舍压缩成一道道限时情景题：几秒内选出最优解，答完立刻告诉你为什么。">
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#141924; --panel2:#1a2030; --line:#242c3c;
+    --txt:#e6ebf5; --dim:#8b93a7; --gold:#e8c26a;
+    --blue:#4aa3ff; --red:#ff5a5a; --green:#3ddc84; --yellow:#ffcc4d; --purple:#b06aff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 700px at 50% -10%, #16203a 0%, var(--bg) 60%);
+    color:var(--txt); font:15px/1.65 "PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    min-height:100vh; display:flex; justify-content:center; padding:22px 16px 60px;
+  }
+  .wrap{width:100%; max-width:880px}
+  h1{font-size:21px;margin:0 0 4px;letter-spacing:.5px}
+  h1 .tag{color:var(--gold)}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .hidden{display:none !important}
+
+  /* ---------- 开始页 ---------- */
+  .rule{font-size:14px;line-height:1.9;color:#c3cbd9}
+  .rule b{color:var(--gold)}
+  .rule ul{margin:8px 0 0;padding-left:20px}
+  .setup{display:flex;gap:14px;flex-wrap:wrap;margin:20px 0 4px}
+  .setup label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--dim)}
+  select{
+    background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+    border-radius:9px;padding:9px 12px;font-size:14px;font-family:inherit;min-width:132px;cursor:pointer;
+  }
+  .btn{
+    background:linear-gradient(180deg,#e8c26a,#cfa84a);color:#241c07;border:0;border-radius:10px;
+    padding:12px 30px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+    transition:transform .12s, filter .12s;
+  }
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line);font-weight:500}
+  .btn.ghost:hover{border-color:#3a4560}
+
+  /* ---------- HUD ---------- */
+  .hud{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;
+       font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .hud .mid{color:#c3cbd9}
+  .hud b{color:var(--txt)}
+  .hud .sc{color:var(--gold);font-weight:700}
+  .streak{color:var(--yellow)}
+
+  /* ---------- 计时条 ---------- */
+  .timerwrap{position:relative;height:6px;background:#1d2434;border-radius:99px;overflow:hidden;margin-bottom:16px}
+  .timerbar{position:absolute;inset:0;background:var(--green);transform-origin:left center;border-radius:99px}
+  .timertxt{position:absolute;right:0;top:10px;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+
+  /* ---------- 题目 ---------- */
+  .qhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .pill{font-size:11.5px;padding:3px 10px;border-radius:99px;border:1px solid;letter-spacing:.3px}
+  .pill.cat{color:var(--gold);border-color:#4a3f22;background:#241f10}
+  .pill.time{color:var(--dim);border-color:var(--line);background:var(--panel2)}
+  .qtitle{font-size:17px;font-weight:700;margin:2px 0 8px;line-height:1.5}
+  .qdesc{font-size:14px;color:#b9c2d2;margin-bottom:16px}
+
+  .mapline{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+  .mapbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px;flex:0 0 auto}
+  .mapbox svg{display:block;width:230px;height:230px;overflow:visible}
+  .legend{font-size:11.5px;color:var(--dim);line-height:1.95;flex:1 1 180px;min-width:170px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:6px;vertical-align:1px}
+
+  /* ---------- 选项 ---------- */
+  .opts{display:flex;flex-direction:column;gap:9px}
+  .opt{
+    display:flex;gap:11px;align-items:flex-start;text-align:left;width:100%;
+    background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+    padding:13px 15px;color:var(--txt);font-size:14px;font-family:inherit;line-height:1.6;
+    cursor:pointer;transition:border-color .13s,background .13s,transform .1s;
+  }
+  .opt:hover:not(:disabled){border-color:#3f4d6d;background:#1e2536}
+  .opt:active:not(:disabled){transform:translateY(1px)}
+  .opt:disabled{cursor:default}
+  .opt .key{
+    flex:0 0 auto;width:23px;height:23px;border-radius:7px;background:#2a3346;
+    display:grid;place-items:center;font-size:12px;font-weight:700;color:#a9b4c8;margin-top:1px;
+  }
+  .opt.pick{border-color:#5a6b93}
+  .opt.best{border-color:var(--green);background:#12281c}
+  .opt.best .key{background:var(--green);color:#08150e}
+  .opt.ok{border-color:var(--yellow);background:#28220f}
+  .opt.ok .key{background:var(--yellow);color:#241c07}
+  .opt.bad{border-color:var(--red);background:#2a1416}
+  .opt.bad .key{background:var(--red);color:#1c0808}
+  .opt .mark{flex:0 0 auto;font-size:11.5px;margin-left:auto;padding-left:10px;color:var(--dim);white-space:nowrap;align-self:center}
+
+  /* ---------- 反馈 ---------- */
+  .fb{margin-top:16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);padding:16px}
+  .fb .verdict{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .fb .verdict.good{color:var(--green)} .fb .verdict.mid{color:var(--yellow)} .fb .verdict.bad{color:var(--red)}
+  .fb .row{margin-bottom:11px}
+  .fb .row:last-child{margin-bottom:0}
+  .fb .lbl{font-size:12px;color:var(--dim);margin-bottom:3px}
+  .fb .body{font-size:13.5px;color:#c9d2e0;line-height:1.75}
+  .fb .body.bestline{color:#a9e9c4}
+  .fb .gain{float:right;font-variant-numeric:tabular-nums;color:var(--dim);font-size:12.5px}
+  .nextline{margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .kbd{font-size:12px;color:var(--dim)}
+
+  /* ---------- 报告 ---------- */
+  .scorebig{font-size:44px;font-weight:800;color:var(--gold);line-height:1.15;font-variant-numeric:tabular-nums}
+  .grade{font-size:14px;color:var(--dim);margin-bottom:20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:22px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+  .stat .k{font-size:11.5px;color:var(--dim);margin-bottom:5px}
+  .stat .v{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums}
+  .secTitle{font-size:14px;font-weight:700;margin:22px 0 12px;color:#dfe6f2}
+  .bars{display:flex;flex-direction:column;gap:9px}
+  .barrow{display:grid;grid-template-columns:74px 1fr 66px;gap:11px;align-items:center;font-size:12.5px}
+  .barrow .nm{color:#c3cbd9}
+  .track{display:block;height:9px;background:#1d2434;border-radius:99px;overflow:hidden}
+  .fill{display:block;height:100%;border-radius:99px;background:var(--green)}
+  .barrow .pc{text-align:right;color:var(--dim);font-variant-numeric:tabular-nums}
+  .advice{background:#1a1f2e;border:1px solid var(--line);border-left:3px solid var(--gold);
+          border-radius:9px;padding:14px 16px;font-size:13.5px;line-height:1.85;color:#c9d2e0}
+  .advice b{color:var(--gold)}
+  .wrongs{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+  details{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+  details summary{cursor:pointer;font-size:13.5px;color:#c3cbd9;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary::before{content:"▸ ";color:var(--dim)}
+  details[open] summary::before{content:"▾ "}
+  details .ans{font-size:13px;color:#b9c2d2;line-height:1.8;margin-top:10px;padding-left:14px;border-left:2px solid #2c3548}
+  details .ans .yours{color:var(--red)} details .ans .right{color:var(--green)}
+  footer{margin-top:26px;font-size:11.5px;color:#5f6779;line-height:1.8;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>中路判断力 <span class="tag">· 限时决策训练</span></h1>
+  <div class="sub">一屏一个中单处境，几秒内选出最优解。选项里没有任何数值提示——全靠判断。</div>
+
+  <!-- ================= 开始页 ================= -->
+  <div id="screen-start" class="card">
+    <div class="rule">
+      <b>玩法</b>
+      <ul>
+        <li>每道题给你一个真实的中单处境（小地图 + 文字），<b>从上到下就是按重要性写的</b>。</li>
+        <li>在倒计时结束前点一个选项（键盘 <b>1</b>~<b>4</b>）。</li>
+        <li>答完立刻出结果：<b>每个选项都会被标上最优 / 可行 / 失误</b>，并告诉你为什么。</li>
+        <li>全部答完给一份复盘：你在哪一类判断上反复出错。</li>
+      </ul>
+      <div style="margin-top:12px;color:var(--dim);font-size:13px">
+        做题时<b>不要</b>想"哪个技能伤害更高"，想"<b>我这条线推过去了吗、对面打野在哪</b>"。
+        中单所有决策都建立在这两件事上：<b>有线权才能动，知道对面打野位置才敢动</b>。
+      </div>
+    </div>
+
+    <div class="setup">
+      <label>每题限时
+        <select id="selLimit">
+          <option value="12000">12 秒（宽松）</option>
+          <option value="8000" selected>8 秒（推荐）</option>
+          <option value="6000">6 秒（高压）</option>
+          <option value="0">不限时（慢慢想）</option>
+        </select>
+      </label>
+      <label>题目数量
+        <select id="selCount">
+          <option value="10">10 题（快练一轮）</option>
+          <option value="15" selected>15 题</option>
+          <option value="0">全部 24 题</option>
+        </select>
+      </label>
+      <label>出题顺序
+        <select id="selOrder">
+          <option value="random" selected>随机打乱</option>
+          <option value="cat">按类型归类</option>
+        </select>
+      </label>
+    </div>
+
+    <div style="margin-top:20px">
+      <button id="btnStart" class="btn">开始训练</button>
+    </div>
+  </div>
+
+  <!-- ================= 游戏页 ================= -->
+  <div id="screen-game" class="hidden">
+    <div class="hud">
+      <div class="mid">第 <b id="qIndex">1</b> / <span id="qTotal">15</span> 题</div>
+      <div><span id="streakVal" class="streak"></span></div>
+      <div>得分 <span id="scoreVal" class="sc">0</span></div>
+    </div>
+
+    <div class="timerwrap">
+      <div id="timerBar" class="timerbar"></div>
+    </div>
+    <div style="position:relative;height:14px"><div id="timerText" class="timertxt"></div></div>
+
+    <div class="card" style="margin-top:8px">
+      <div class="qhead">
+        <span id="catTag" class="pill cat"></span>
+        <span id="timeTag" class="pill time"></span>
+      </div>
+      <div id="qTitle" class="qtitle"></div>
+      <div id="qDesc" class="qdesc"></div>
+
+      <div class="mapline">
+        <div class="mapbox"><svg id="minimap" viewBox="-8 -8 116 116" aria-label="小地图示意"></svg></div>
+        <div class="legend">
+          <div><span class="dot" style="background:var(--blue)"></span>我方英雄 / 我方目标</div>
+          <div><span class="dot" style="background:var(--red)"></span>敌方英雄</div>
+          <div><span class="dot" style="background:#c9b06a"></span>野怪 / BUFF</div>
+          <div><span class="dot" style="background:var(--purple)"></span>中立资源（暴君 / 主宰）</div>
+          <div><span class="dot" style="background:var(--dim)"></span>位置不明</div>
+          <div style="margin-top:8px;color:#5f6779">※ 示意图，不必与当前版本地图完全一致</div>
+        </div>
+      </div>
+
+      <div id="options" class="opts"></div>
+      <div id="feedback"></div>
+    </div>
+  </div>
+
+  <!-- ================= 报告页 ================= -->
+  <div id="screen-end" class="hidden">
+    <div class="card">
+      <div id="report"></div>
+      <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
+        <button id="btnRestart" class="btn">再练一轮</button>
+        <button id="btnHome" class="btn ghost">返回设置</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    教学用途的决策训练模拟器。所有情境为示意，目的是把「取舍」讲清楚，不代表真实对局的精确数值。<br>
+    与腾讯 / 天美工作室群无任何关联。
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   题库
+   ------------------------------------------------------------
+   每道题的 opts 里 v 的含义：
+     2 = 最优解（本题该做的事）
+     1 = 可行（不算错，但不是最优）
+     0 = 失误（这一手会亏节奏）
+   设计原则：每个选项都写清楚「为什么」，答错才是真正学到东西的时候。
+   情境里的具体秒数/刷新时间仅作示意，以当前版本为准。
+   ============================================================ */
+const BANK = [
+  {
+    "cat": "线权",
+    "t": "0:10",
+    "q": "开局第一波，要不要推线？",
+    "d": "开局第一波兵线。对面中单是发育型法师（前期弱）。你方打野是反野型，他说想 1 分钟去反对面野区。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ],
+      [
+        54,
+        46,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        42,
+        86,
+        "ally",
+        "打野"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "用技能推线，尽量在 1 分钟前把线推过去",
+        "v": 2,
+        "why": "最优。打野要反野就需要中路线权——你必须先把线推过去，才能跟着他进对面野区。第一波用技能推线，是在给打野创造机会，也顺手拿到了河道视野。"
+      },
+      {
+        "t": "稳稳补刀，不推线，先保证自己的发育",
+        "v": 1,
+        "why": "保守但不亏。对面前期弱，稳补刀确实能积累优势；但你放弃了一个和打野联动的机会，而中单和打野的联动正是这游戏最强的一环。"
+      },
+      {
+        "t": "把线推到对面塔下，然后一个人去对面野区",
+        "v": 0,
+        "why": "顺序错了。线推过去之后要先确认打野动向和对面打野位置，一个人进对面野区就是去送 buff。"
+      },
+      {
+        "t": "兵线先不管，直接跟着打野走",
+        "v": 0,
+        "why": "兵线不管，塔会掉、你会掉等级。中单的经济和等级正是游走的本钱，没等级的中单游走等于送。"
+      }
+    ]
+  },
+  {
+    "cat": "资源",
+    "t": "1:00",
+    "q": "河蟹刷新，打野就在旁边",
+    "d": "河道之灵刷新。你方打野正在旁边。对面打野位置不明。你血量 70%，蓝量只够放两个技能。",
+    "m": [
+      [
+        50,
+        50,
+        "obj",
+        "河蟹"
+      ],
+      [
+        46,
+        54,
+        "ally",
+        "打野"
+      ],
+      [
+        56,
+        42,
+        "unknown",
+        "打野?"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "先用小地图确认对面打野位置，再决定抢不抢",
+        "v": 2,
+        "why": "最优。河蟹不是\"必须抢\"的资源，而是\"看情况抢\"的资源。花一秒确认信息再动手——对面打野如果就在附近，这波河蟹的代价可能是两个人头。"
+      },
+      {
+        "t": "立刻和打野一起打河蟹",
+        "v": 1,
+        "why": "人多确实有优势，但对面打野位置完全不明。你和打野两人挤在河道，正好是对方中野包夹的完美目标。"
+      },
+      {
+        "t": "让打野自己打，你回线上补兵",
+        "v": 1,
+        "why": "保守但不亏。你蓝量不多，回线补刀是合理的；但打野一个人打河蟹容易被抢。"
+      },
+      {
+        "t": "自己一个人冲上去打河蟹",
+        "v": 0,
+        "why": "你血量 70%、蓝量只够两个技能，还要一个人去河道——对面中野随便来一个你就得交闪甚至送命。"
+      }
+    ]
+  },
+  {
+    "cat": "游走",
+    "t": "5:00",
+    "q": "想去下路支援，但兵线在中间",
+    "d": "下路打起来了，你方下路处于劣势。你想去支援。现在中路兵线停在中间，你有技能可以快速推线。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ],
+      [
+        52,
+        46,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        80,
+        80,
+        "ally",
+        "下路"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "先用技能把线推过去，再往下路走",
+        "v": 2,
+        "why": "最优。推线—游走是中单游走的标准顺序：先让对面中单被兵线牵制住、不能跟着你走，同时你也不会因为离线而掉塔掉经济。"
+      },
+      {
+        "t": "直接往下路走，兵线回来再补",
+        "v": 0,
+        "why": "兵线在中间，你走了对面中单可以直接推塔。你支援拿到一个人头的收益，很可能抵消不了掉塔的损失。"
+      },
+      {
+        "t": "不去支援，专心补刀发育",
+        "v": 1,
+        "why": "保守。但如果下路已经打起来、你能赶上，支援的收益高于多补几个刀。中单的价值不只是补刀。"
+      },
+      {
+        "t": "推到一半就往下路走",
+        "v": 0,
+        "why": "最亏的一种：线没推过去，对面中单能自由跟过来，你还白白掉了兵。两头都丢。"
+      }
+    ]
+  },
+  {
+    "cat": "对线",
+    "t": "2:30",
+    "q": "对面中单刚交了大招去清线",
+    "d": "对面中单刚刚用掉大招清理兵线，技能还在冷却。你血量满、蓝量够，兵线在中路中间偏你这边。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ],
+      [
+        54,
+        46,
+        "enemy",
+        "对面中单"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "立刻上前压一波血线",
+        "v": 2,
+        "why": "最优。对面核心技能在冷却，这是对线期最该压人的窗口。压血线不只是赚血量，还让他不敢游走、不敢安心补刀，优势就是这样一点点滚起来的。"
+      },
+      {
+        "t": "稳妥补刀，等他技能好了再说",
+        "v": 1,
+        "why": "稳，但你放弃了一个明确的优势窗口。对线优势从来不是靠等来的。"
+      },
+      {
+        "t": "直接越塔杀他",
+        "v": 0,
+        "why": "对面在塔下，你有兵线优势不等于能越塔。中单前期的越塔风险极高，失败一次节奏就断了。"
+      },
+      {
+        "t": "回家补状态",
+        "v": 0,
+        "why": "你满血满蓝，回家纯粹是浪费一个压制窗口——对线优势就是靠这种小窗口一点点积累起来的。"
+      }
+    ]
+  },
+  {
+    "cat": "视野",
+    "t": "4:00",
+    "q": "你压到对面塔下，对面打野失联",
+    "d": "你把线压到了对面塔下。对面打野已经从地图上消失 25 秒。你方打野在上半野区。",
+    "m": [
+      [
+        56,
+        44,
+        "ally",
+        "你(压线)"
+      ],
+      [
+        52,
+        40,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        24,
+        58,
+        "ally",
+        "打野"
+      ],
+      [
+        40,
+        40,
+        "unknown",
+        "打野?"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "退后一点，站在靠近己方野区的一侧补刀",
+        "v": 2,
+        "why": "最优。压线的收益要拿，但站位要靠向有自己视野、离自己塔更近的方向。把\"被抓的可能性\"压到最低，同时不放弃线权。"
+      },
+      {
+        "t": "继续压线，把对面中单血线压住",
+        "v": 0,
+        "why": "压到对面塔下 + 对面打野失联 25 秒，这是中路被抓最经典的剧本。中路只有两个逃生方向，一旦被绕后基本走不掉。"
+      },
+      {
+        "t": "立刻回城，等兵线回来再上线",
+        "v": 1,
+        "why": "太保守但也安全。你会丢掉兵线和线权，收益不如\"退后站位继续补\"。"
+      },
+      {
+        "t": "进对面野区插个视野探打野",
+        "v": 0,
+        "why": "你一个人深入对面野区找人，正好撞上他。这种活该交给打野和辅助。"
+      }
+    ]
+  },
+  {
+    "cat": "资源",
+    "t": "3:30",
+    "q": "你蓝量见底，打野正在打蓝 buff",
+    "d": "你蓝量已经见底，技能放不出两个。你方打野正在打蓝 buff，他血量满。你方打野是前期强势、不太依赖蓝的英雄。",
+    "m": [
+      [
+        24,
+        58,
+        "neutral",
+        "蓝buff"
+      ],
+      [
+        28,
+        62,
+        "ally",
+        "打野"
+      ],
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "先用最省蓝的方式撑一轮，同时让打野知道你需要蓝",
+        "v": 2,
+        "why": "最优。中单是吃蓝优先级最高的位置之一，但拿蓝要看时机。用普攻和关键技能撑过这一波，让打野知道你的需求，他去刷下一个蓝时自然会留给你。"
+      },
+      {
+        "t": "直接过去跟打野要这个蓝 buff",
+        "v": 1,
+        "why": "你确实需要蓝，但当场去要容易和打野起冲突，而且他正在打。沟通方式比沟通内容更重要。"
+      },
+      {
+        "t": "立刻回城补蓝",
+        "v": 1,
+        "why": "回城能解决问题，但你会掉一波兵和线权。除非确定这波兵不亏，否则先用省蓝打法撑着更划算。"
+      },
+      {
+        "t": "硬撑，完全不用技能，只补刀",
+        "v": 1,
+        "why": "省蓝方向是对的，但完全不用技能会掉大量补刀，还会被对面直接推线压塔。"
+      }
+    ]
+  },
+  {
+    "cat": "联动",
+    "t": "6:30",
+    "q": "打野在对面野区被打了，去不去？",
+    "d": "你方打野入侵对面蓝区时被对面打野抓住打了起来。你兵线刚推过去，你有线权。对面中单已经先动了。",
+    "m": [
+      [
+        62,
+        32,
+        "ally",
+        "打野"
+      ],
+      [
+        66,
+        30,
+        "enemy",
+        "对面打野"
+      ],
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ],
+      [
+        56,
+        44,
+        "enemy",
+        "对面中单"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "立刻赶过去支援，形成 2v2",
+        "v": 2,
+        "why": "最优。你有线权、兵线已经推过去，意味着你可以随时走而不亏线。对面中单虽然先动，但你先到的位置更近。这种小规模 2v2，中单多到的这一个人往往直接决定生死。"
+      },
+      {
+        "t": "不去，继续补刀发育",
+        "v": 0,
+        "why": "打野死了之后对面打野会滚起节奏，而且你后面会一直被针对。打野的入侵本来就是在为你创造空间，你不能见死不救。"
+      },
+      {
+        "t": "等兵线彻底进塔再走",
+        "v": 1,
+        "why": "稳妥但会错过时机。小规模战斗几十秒就结束，晚了就是去收尸。"
+      },
+      {
+        "t": "往下路走，去抓对面下路",
+        "v": 1,
+        "why": "换节奏的思路可以，但打野正在挨打，你放着不管会让他直接丢掉节奏。"
+      }
+    ]
+  },
+  {
+    "cat": "线权",
+    "t": "2:00",
+    "q": "打野要打暴君，但你正中路被压",
+    "d": "第一条暴君即将刷新。你方打野想去打，但你中路被压，兵线在自己塔下，没有线权。对面中单状态很好。",
+    "m": [
+      [
+        68,
+        68,
+        "obj",
+        "暴君"
+      ],
+      [
+        42,
+        86,
+        "ally",
+        "打野"
+      ],
+      [
+        54,
+        56,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        48,
+        70,
+        "ally",
+        "你"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "告诉打野先别打，等你有线权或者换个目标",
+        "v": 2,
+        "why": "最优。开暴君的前提是\"中路线权 + 对面打野位置明确\"。你直接告诉打野现在条件不成熟，比硬着头皮去送更负责。打野也需要这个信息来做判断。"
+      },
+      {
+        "t": "硬推线过去，然后跟着打野一起打",
+        "v": 0,
+        "why": "你已经被压，硬推线会被对面中单和打野当靶子打。没有线权的时候别强行去碰中立资源。"
+      },
+      {
+        "t": "不管兵线，直接去帮打野打暴君",
+        "v": 0,
+        "why": "你走了对面中单直接推塔；而且你没有线权，意味着河道随时可能被包夹。"
+      },
+      {
+        "t": "让打野自己打，你在线上盯着",
+        "v": 1,
+        "why": "至少你守住了线，但打野一个人打暴君风险很高，很容易被抢甚至被抓。"
+      }
+    ]
+  },
+  {
+    "cat": "兵线",
+    "t": "7:00",
+    "q": "你要回城，但兵线停在中间",
+    "d": "你血量 40%，需要回城。现在兵线在中路中间，对面中单也在线上。你方打野在下半野区。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "你(残血)"
+      ],
+      [
+        52,
+        46,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        38,
+        72,
+        "ally",
+        "打野"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "先用技能把线推进对面塔，再回城",
+        "v": 2,
+        "why": "最优。把线推进对面塔下再回城，对面中单必须留在塔下清线，你就能安全回城；等你回来时兵线刚好回到中间，是最理想的节奏。"
+      },
+      {
+        "t": "直接回城，让兵线自然消耗",
+        "v": 0,
+        "why": "兵线在中间，你走了对面中单可以自由选择推线或者游走。你回来时塔可能已经被磨掉一半血。"
+      },
+      {
+        "t": "把线控在自己塔前再回城",
+        "v": 1,
+        "why": "控线是更好的技巧，但你血量 40% 时在线上多待一秒都是风险。先推线回城更实际。"
+      },
+      {
+        "t": "不回城，硬撑到兵线自己过去",
+        "v": 0,
+        "why": "40% 血量硬撑，对面中单或打野随时可以越塔。为这一波兵赌上性命不值得。"
+      }
+    ]
+  },
+  {
+    "cat": "团战",
+    "t": "10:00",
+    "q": "河道团战爆发，你血量 50%",
+    "d": "河道爆发团战。你血量 50%，蓝量充足、技能都在。你位置在中路，离战场不远。你方前排已经进场。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "团战"
+      ],
+      [
+        60,
+        60,
+        "enemy",
+        "对面"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "判断能否赶上，能进场就靠后站位输出",
+        "v": 2,
+        "why": "最优。中单是团队的主要输出，你的价值是\"活着输出\"。靠后站位、等对面控制交完再进场，比你冲在前面有效得多。"
+      },
+      {
+        "t": "立刻赶过去，从侧翼直接压上去",
+        "v": 1,
+        "why": "支援方向是对的，但 50% 血量的中单进场必须格外注意站位。对面只要有刺客，你进得太靠前就是第一个死。"
+      },
+      {
+        "t": "不去了，继续推中路塔",
+        "v": 0,
+        "why": "团战决定局势，你为了推塔缺席，队友就是在四打五。收益完全不对等。"
+      },
+      {
+        "t": "先回城补满状态再赶过去",
+        "v": 0,
+        "why": "等你回城再赶回来，团战早就打完了，你既没参团也没拿到任何东西。"
+      }
+    ]
+  },
+  {
+    "cat": "游走",
+    "t": "4:30",
+    "q": "上路打起来了，你有线权",
+    "d": "上路爆发对拼，你方上单血量处于劣势。你有线权（兵线刚推过去）。从你的位置走到上路大约需要 8 秒。",
+    "m": [
+      [
+        11,
+        30,
+        "ally",
+        "上单"
+      ],
+      [
+        13,
+        22,
+        "enemy",
+        "对面上单"
+      ],
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "立刻走上路支援",
+        "v": 2,
+        "why": "最优。你有线权意味着可以自由移动而不亏线。8 秒的距离在上单对拼里不算远，而你带着控制或爆发技能赶到，往往能直接改变结果。"
+      },
+      {
+        "t": "不去，继续保持中路压力",
+        "v": 1,
+        "why": "守线是稳的，但你放弃了一个\"只有有线权才能做\"的动作。中单的价值从来不只是补刀。"
+      },
+      {
+        "t": "先去河道看一眼再决定",
+        "v": 0,
+        "why": "你在犹豫的这几秒里，上单可能已经死了。中单支援要果断，犹豫本身就是最贵的成本。"
+      },
+      {
+        "t": "往下路走，赌对面打野在下路",
+        "v": 0,
+        "why": "上路已经在打了，你却跑向反方向，等于两处都不管，最后哪一路都没帮上。"
+      }
+    ]
+  },
+  {
+    "cat": "视野",
+    "t": "6:00",
+    "q": "打野要来中路抓，但对面中单很谨慎",
+    "d": "你方打野想来中路抓对面中单。但对面中单一直缩在塔下很谨慎，站位还靠着河道有视野的那一侧。",
+    "m": [
+      [
+        54,
+        44,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        62,
+        38,
+        "ally",
+        "打野"
+      ],
+      [
+        52,
+        50,
+        "ally",
+        "你"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "你先把线推过去，把他往外勾，再让打野从侧面绕",
+        "v": 2,
+        "why": "最优。抓塔下的中单要先\"造线\"——把兵线推过去让他不得不出塔补刀，同时给打野争取绕后的时间。他有视野也不怕，因为你已经改变了他的站位。"
+      },
+      {
+        "t": "让打野直接上来，你从正面压上去逼他走位",
+        "v": 1,
+        "why": "打得着就打，但对面有视野，他早就看到打野了，大概率直接缩回塔下，白跑一趟。"
+      },
+      {
+        "t": "放弃这波，让打野去别的路",
+        "v": 1,
+        "why": "不算错，但中路抓不到往往是因为方法不对，而不是位置不对。先试一次造线再放弃也不迟。"
+      },
+      {
+        "t": "你自己上去强杀",
+        "v": 0,
+        "why": "对面既有视野又缩在塔下，你一个人上去强杀就是主动送人头，还会把线权一起送掉。"
+      }
+    ]
+  },
+  {
+    "cat": "兵线",
+    "t": "9:00",
+    "q": "逆风守塔，对面中野在河道徘徊",
+    "d": "你方整体逆风。你在中路塔下清兵。对面中单和打野在河道附近徘徊，可能在找机会越塔。你血量 60%。",
+    "m": [
+      [
+        50,
+        58,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        36,
+        40,
+        "enemy",
+        "对面打野"
+      ],
+      [
+        52,
+        62,
+        "ally",
+        "你(塔下)"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "站在塔最里面，只用技能补刀，等他们走",
+        "v": 2,
+        "why": "最优。逆风守塔的核心就是\"不送\"。站在安全距离用技能补刀，对面越塔的成本会变得极高，他们大概率会选择离开。"
+      },
+      {
+        "t": "出塔推线，把兵线推过去减压",
+        "v": 0,
+        "why": "你血量只有 60%，对面两人就在河道，你出塔推线等于主动送人头。"
+      },
+      {
+        "t": "叫打野立刻来帮忙反蹲",
+        "v": 1,
+        "why": "可以，但打野在逆风局未必有空；而且如果你自己的站位已经足够安全，就没必要拉他来分摊风险。"
+      },
+      {
+        "t": "立刻回城，让塔掉算了",
+        "v": 0,
+        "why": "塔是你方最后一道防线，能守就守。主动放弃等于把逆风变成崩盘。"
+      }
+    ]
+  },
+  {
+    "cat": "游走",
+    "t": "8:00",
+    "q": "中路没机会，该去哪边游走？",
+    "d": "中路暂时没有击杀机会，你有线权。上路你方均势，下路你方处于劣势，对面打野刚刚在下路露头。",
+    "m": [
+      [
+        40,
+        70,
+        "enemy",
+        "对面打野"
+      ],
+      [
+        78,
+        72,
+        "ally",
+        "下路"
+      ],
+      [
+        11,
+        30,
+        "ally",
+        "上单"
+      ],
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "去下路，对面打野刚在下路露头，能形成人数优势",
+        "v": 2,
+        "why": "最优。游走的目标不是\"随便挑一条路\"，而是\"用已知信息打未知\"。对面打野位置已知在下路，你去下路至少是 3v3、很可能形成 3v2，成功率最高。"
+      },
+      {
+        "t": "去上路，趁均势找一波机会",
+        "v": 1,
+        "why": "均势意味着双方状态都在，成功率一般。不如跟着已知信息走。"
+      },
+      {
+        "t": "留在中路继续刷线",
+        "v": 1,
+        "why": "稳，但你手里握着线权却不利用，等于浪费了中单最核心的优势。"
+      },
+      {
+        "t": "去对面野区反野",
+        "v": 1,
+        "why": "对面打野在下路、他上半野区是空的——这个判断没错。但中单反野的效率不如打野，被抓的风险也更高。"
+      }
+    ]
+  },
+  {
+    "cat": "对线",
+    "t": "5:30",
+    "q": "对面是消耗型，你蓝量只剩 30%",
+    "d": "对面中单是消耗型法师，一直在用小技能点你。你蓝量只剩 30%，血量 70%，兵线在中间。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "你(缺蓝)"
+      ],
+      [
+        54,
+        46,
+        "enemy",
+        "对面中单"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "改用普攻补刀，把技能留到关键时候，撑到回城或蓝 buff",
+        "v": 2,
+        "why": "最优。对线消耗战里，蓝量就是你的血。省下技能、用普攻补刀，撑到回城或拿到蓝，比硬拼划算得多。"
+      },
+      {
+        "t": "继续用技能对拼，压住他",
+        "v": 0,
+        "why": "30% 蓝量去对拼打不过；蓝一用完你就只能干看着，对面会直接把线推到塔下。"
+      },
+      {
+        "t": "直接回城补蓝",
+        "v": 1,
+        "why": "能解决问题，但你要掉一波兵和线权。兵线位置不好的话亏得更多。"
+      },
+      {
+        "t": "上前强杀对面",
+        "v": 0,
+        "why": "蓝量不足、对面还是满状态，强行开战等于自杀——你连一套技能都打不满，只会被反杀。"
+      }
+    ]
+  },
+  {
+    "cat": "联动",
+    "t": "7:30",
+    "q": "打野要入侵，需要你的线权",
+    "d": "你方打野想入侵对面红区，他说需要你中路的线权支持。但你中路兵线刚回到中间，对面中单状态满。",
+    "m": [
+      [
+        76,
+        42,
+        "neutral",
+        "对面红区"
+      ],
+      [
+        70,
+        36,
+        "ally",
+        "打野"
+      ],
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "快速推线，推过去之后跟打野一起进",
+        "v": 2,
+        "why": "最优。入侵反野成功的关键在于\"中单能不能跟着\"。把线推过去，对面中单被牵制住，你就能跟着打野形成 2v1，成功率完全不同。"
+      },
+      {
+        "t": "让打野自己去，你在中路盯着对面中单",
+        "v": 0,
+        "why": "打野一个人进对面野区，对面打野加中单很容易把他留下。有线权的中单不跟，等于白白浪费了打野创造的这次机会。"
+      },
+      {
+        "t": "放弃这次入侵，稳着发育",
+        "v": 1,
+        "why": "稳，但如果你本来就能推线，就等于主动放弃了一次和打野联动的机会。"
+      },
+      {
+        "t": "直接跟打野走，兵线不管",
+        "v": 0,
+        "why": "线没推，你走了对面中单能自由跟过来或者直接推塔，你两头都亏。"
+      }
+    ]
+  },
+  {
+    "cat": "视野",
+    "t": "2:30",
+    "q": "暴君要刷新，你先做什么？",
+    "d": "第一条暴君即将刷新。你在中路，对面打野已经失联 15 秒。你方打野准备去打暴君。",
+    "m": [
+      [
+        68,
+        68,
+        "obj",
+        "暴君"
+      ],
+      [
+        44,
+        42,
+        "unknown",
+        "打野?"
+      ],
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "先推线过去，然后去河道给视野确认对面打野位置",
+        "v": 2,
+        "why": "最优。中单离河道最近，\"推完线去河道给视野\"是中单最标准的一个循环。视野确认了，打野才敢安心开龙。"
+      },
+      {
+        "t": "直接去河道蹲着等打野来",
+        "v": 0,
+        "why": "你不推线就走，兵线会掉、塔会被磨，而且还暴露了自己在河道的位置。"
+      },
+      {
+        "t": "留在中路补刀，让打野自己判断",
+        "v": 1,
+        "why": "补刀没错，但你明明有位置优势却不提供视野，打野只能盲开。"
+      },
+      {
+        "t": "进对面野区去找打野",
+        "v": 0,
+        "why": "对面打野失联，你进对面野区找人，大概率是直接撞上他。"
+      }
+    ]
+  },
+  {
+    "cat": "团战",
+    "t": "14:00",
+    "q": "对面对付有刺客，你满状态",
+    "d": "中路团战爆发。对面有突进型刺客，你满血满蓝、技能都在。你方前排已经开团，对面刺客还没露面。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "前排"
+      ],
+      [
+        44,
+        44,
+        "enemy",
+        "对面"
+      ],
+      [
+        42,
+        62,
+        "ally",
+        "你"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "站在前排后面输出，等对面刺客交完技能再往前走",
+        "v": 2,
+        "why": "最优。中单是团队输出核心，对面刺客没露面时你必须保持安全距离。等他技能交掉你再上前，这波团基本就稳了。"
+      },
+      {
+        "t": "跟着前排一起冲上去打伤害",
+        "v": 0,
+        "why": "对面的刺客就等你这么干。你冲在前面，他一套就能把你带走，团队输出直接归零。"
+      },
+      {
+        "t": "先绕后去切对面后排",
+        "v": 1,
+        "why": "中单多数不是切后排的定位，绕后容易和队伍脱节，风险高于收益。"
+      },
+      {
+        "t": "躲得很远，等团战快结束再上",
+        "v": 0,
+        "why": "躲太远等于缺席。你要在\"能输出\"和\"安全\"之间找位置，而不是躲到根本打不着人。"
+      }
+    ]
+  },
+  {
+    "cat": "兵线",
+    "t": "5:00",
+    "q": "你被压在塔下，打野在别处",
+    "d": "你中路被对面压制，兵线一直在你塔前。你方打野在上路帮忙，一时来不了。你血量 80%，蓝量够。",
+    "m": [
+      [
+        52,
+        56,
+        "ally",
+        "你(塔下)"
+      ],
+      [
+        48,
+        48,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        14,
+        24,
+        "ally",
+        "打野"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "塔下稳补刀，等打野腾出手或者兵线回推",
+        "v": 2,
+        "why": "最优。被压的时候，不掉经济、不死，就是在赢。塔下补刀虽然难，但比冒险出塔强得多。等对面推线的势头过去，兵线自然会回来。"
+      },
+      {
+        "t": "出塔强推线，把兵线推回去",
+        "v": 0,
+        "why": "你被压就是因为打不过，出塔推线等于主动送人头，而且死了之后对面会顺势推掉你的塔。"
+      },
+      {
+        "t": "叫打野立刻来中路帮忙",
+        "v": 1,
+        "why": "叫打野合理，但他在上路帮忙，你强行叫他来会让上路也丢节奏。自己能扛就先扛。"
+      },
+      {
+        "t": "换到别的路去打",
+        "v": 0,
+        "why": "中单换线会打乱整队的对线结构，而且换过去未必更好打。"
+      }
+    ]
+  },
+  {
+    "cat": "节奏",
+    "t": "11:00",
+    "q": "推掉了对面中塔，接下来去哪？",
+    "d": "你配合队友推掉了对面中路一塔，你方整体经济领先。对面中单退到了二塔。",
+    "m": [
+      [
+        46,
+        54,
+        "ally",
+        "中塔(已推)"
+      ],
+      [
+        30,
+        74,
+        "ally",
+        "下路"
+      ],
+      [
+        68,
+        68,
+        "obj",
+        "暴君"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "转去别的路帮忙推塔，把优势扩大",
+        "v": 2,
+        "why": "最优。中塔掉了之后对面中路防线缩到二塔，你继续待在中路收益很低。转线推塔或者配合打野入侵野区，才是把优势变成胜势的方式。"
+      },
+      {
+        "t": "继续在中路压二塔",
+        "v": 1,
+        "why": "压二塔能消耗，但二塔有防御加成，硬啃效率很低，不如转线。"
+      },
+      {
+        "t": "立刻组织队友去打主宰",
+        "v": 1,
+        "why": "拿下中塔后打主宰是好选择，但要看对面还有几个人活着——对面都活着的时候开龙有被抢的风险。"
+      },
+      {
+        "t": "回城补状态",
+        "v": 1,
+        "why": "状态不好就回，但如果状态还行，回城等于浪费掉这段优势期。"
+      }
+    ]
+  },
+  {
+    "cat": "对线",
+    "t": "3:00",
+    "q": "你和对面同时到 4 级，都有大招",
+    "d": "你和对面中单几乎同时到 4 级（都有大招）。双方血量都满。你方打野在你侧后方，对面打野位置不明。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ],
+      [
+        54,
+        46,
+        "enemy",
+        "对面中单"
+      ],
+      [
+        30,
+        64,
+        "ally",
+        "打野"
+      ],
+      [
+        66,
+        34,
+        "unknown",
+        "打野?"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "先推线保持线权，等打野到位或对面打野露头再打",
+        "v": 2,
+        "why": "最优。中单对拼的胜负往往不由伤害决定，而是由\"谁能先叫到人\"决定。先把线权和信息优势拿在手里，你随时可以选择打或者不打。"
+      },
+      {
+        "t": "直接开大对拼，赌自己伤害更高",
+        "v": 0,
+        "why": "对面打野位置不明，你先动手就等于给对面打野一个击杀你的机会。4 级双方伤害都够杀人，赌伤害是最不划算的赌法。"
+      },
+      {
+        "t": "上前换血，但不交大招",
+        "v": 1,
+        "why": "小换血可以试探，但对面打野失联时，你上前换血本身就已经把自己放到危险位置上了。"
+      },
+      {
+        "t": "退回塔下，完全不打",
+        "v": 1,
+        "why": "太保守。你满血、有打野在侧后方，完全不压等于把主动权白送给对面。"
+      }
+    ]
+  },
+  {
+    "cat": "节奏",
+    "t": "12:00",
+    "q": "团战一触即发，中路兵线没推",
+    "d": "双方在中路附近集结，随时可能开团。你中路兵线还没推过去，目前停在中线附近。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "你"
+      ],
+      [
+        52,
+        46,
+        "neutral",
+        "兵线"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "先把兵线推过去，再参与团战准备",
+        "v": 2,
+        "why": "最优。团战前的兵线就是保险：推过去，赢了可以直接推塔，输了对面也得先清线才能推进。这是中单在团战前最重要的一项准备工作。"
+      },
+      {
+        "t": "直接去参团，兵线先不管",
+        "v": 0,
+        "why": "团战打输，对面带着兵线直接推你家；打赢了，你也没有兵线优势去推塔。两头都亏。"
+      },
+      {
+        "t": "让队友先打，自己清完线再来",
+        "v": 1,
+        "why": "清线优先是对的，但如果团战已经开打，你就该立刻放下兵线进场。要分清\"准备\"和\"已开打\"。"
+      },
+      {
+        "t": "回城补状态",
+        "v": 0,
+        "why": "状态没问题的话，回城就是白白错过团战；等你回来，看到的只会是打完了的战场。"
+      }
+    ]
+  },
+  {
+    "cat": "团战",
+    "t": "15:00",
+    "q": "团战打赢了，对面残血逃跑",
+    "d": "团战你方打赢，对面三人残血往自己野区逃。你血量 60%，技能在冷却，蓝量够。你方还有两人活着。",
+    "m": [
+      [
+        56,
+        56,
+        "enemy",
+        "对面残血"
+      ],
+      [
+        46,
+        46,
+        "ally",
+        "我方"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "追击残血扩大战果，但不越塔、不深追",
+        "v": 2,
+        "why": "最优。团战打赢后的追击是把优势变成胜势的关键——多拿一两个人头，往往直接决定后面几波资源争夺。但要有底线：不越塔、不进对面野区深处。"
+      },
+      {
+        "t": "转头去拿暴君或主宰",
+        "v": 1,
+        "why": "拿资源也是好选择，尤其对面死了人、没法来抢的时候。但如果对面还有战力能争，追击的收益通常更直接。"
+      },
+      {
+        "t": "立刻回城补给",
+        "v": 1,
+        "why": "稳，但你会放弃扩大战果的机会。除非血量极低或有明确风险，否则不划算。"
+      },
+      {
+        "t": "一直追到对面野区深处",
+        "v": 0,
+        "why": "深追是团战翻盘最常见的原因。对面复活的人、塔和 buff 都会让你把刚赢下来的团战送回去。"
+      }
+    ]
+  },
+  {
+    "cat": "节奏",
+    "t": "17:00",
+    "q": "你方劣势，团战在中路，你在边线带线",
+    "d": "你方整体劣势。中路爆发团战，你正在下路带线，兵线刚推到对面一塔。你方现在是四打五。",
+    "m": [
+      [
+        50,
+        50,
+        "ally",
+        "团战"
+      ],
+      [
+        36,
+        80,
+        "ally",
+        "你(带线)"
+      ]
+    ],
+    "opts": [
+      {
+        "t": "立刻回中路参团，形成五打五",
+        "v": 2,
+        "why": "最优。劣势局最怕的就是被逐个击破。你回防形成五打五，至少不会输得更惨；而你带线换来的那一座塔，价值远不如一波团灭的损失。"
+      },
+      {
+        "t": "继续带线，逼对面回防",
+        "v": 1,
+        "why": "带线牵制是劣势局的常用手段，但前提是队友能拖住。四打五的情况下队友很可能直接被团灭，你带的线也换不回一座塔。"
+      },
+      {
+        "t": "继续带线，直到把这塔推掉",
+        "v": 0,
+        "why": "队友四打五大概率团灭，你推一座塔根本补不回来；而且对面回头就能顺手把你抓了。"
+      },
+      {
+        "t": "回城，但不参团，等他们打完",
+        "v": 0,
+        "why": "你方已经是劣势，再少一个人参团等于直接放弃这一波；不参团和带线不回来没有区别。"
+      }
+    ]
+  }
+];
+
+/* ============================================================
+   工具
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const byId = $;   // 统一入口，check.mjs 会扫描 byId 的引用做完整性校验
+const CAT_STYLE = {
+  '线权':'#e8c26a', '资源':'#b06aff', '游走':'#4aa3ff', '对线':'#3ddc84',
+  '视野':'#5fd0d0', '联动':'#ff8a4d', '兵线':'#ffcc4d', '团战':'#ff5a5a', '节奏':'#c9b06a'
+};
+const KIND_COLOR = { ally:'#4aa3ff', enemy:'#ff5a5a', neutral:'#c9b06a', obj:'#b06aff', unknown:'#8b93a7' };
+const KEYCHAR = ['A','B','C','D','E'];
+
+function shuffle(a){
+  const r = a.slice();
+  for (let i = r.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [r[i], r[j]] = [r[j], r[i]];
+  }
+  return r;
+}
+
+/* ============================================================
+   小地图（SVG 示意图）
+   ============================================================ */
+const MAP_STATIC = `
+  <polyline points="10,90 10,10 90,10" fill="none" stroke="#2b3548" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="10,90 90,90 90,10" fill="none" stroke="#2b3548" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <line x1="10" y1="90" x2="90" y2="10" stroke="#2b3548" stroke-width="5.5" stroke-linecap="round"/>
+  <line x1="6" y1="6" x2="94" y2="94" stroke="#2f6fd0" stroke-opacity="0.16" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="10" cy="90" r="5.4" fill="#2f6fd0" stroke="#0d1018" stroke-width="1"/>
+  <circle cx="90" cy="10" r="5.4" fill="#c0392b" stroke="#0d1018" stroke-width="1"/>
+  <circle cx="24" cy="58" r="2.9" fill="#3f7fd0" opacity="0.5"/>
+  <circle cx="42" cy="86" r="2.9" fill="#d0563f" opacity="0.5"/>
+  <circle cx="76" cy="42" r="2.9" fill="#3f7fd0" opacity="0.5"/>
+  <circle cx="58" cy="14" r="2.9" fill="#d0563f" opacity="0.5"/>
+  <circle cx="35" cy="35" r="3.7" fill="none" stroke="#b06aff" stroke-width="1.3" opacity="0.85"/>
+  <text x="35" y="28.5" font-size="4.4" fill="#8f6fd0" text-anchor="middle">主宰</text>
+  <circle cx="68" cy="68" r="3.7" fill="none" stroke="#b06aff" stroke-width="1.3" opacity="0.85"/>
+  <text x="68" y="77" font-size="4.4" fill="#8f6fd0" text-anchor="middle">暴君</text>
+  <text x="10" y="99.5" font-size="4.4" fill="#4a7fd0" text-anchor="middle">我方</text>
+  <text x="90" y="5" font-size="4.4" fill="#c05b4a" text-anchor="middle">敌方</text>
+`;
+
+function renderMap(markers){
+  const dots = (markers || []).map(([x, y, k, label]) => {
+    const c = KIND_COLOR[k] || '#8b93a7';
+    const ring = k === 'unknown'
+      ? `<circle cx="${x}" cy="${y}" r="3.2" fill="none" stroke="${c}" stroke-width="1.3" stroke-dasharray="1.6 1.4"/>`
+      : `<circle cx="${x}" cy="${y}" r="3.2" fill="${c}" stroke="#0d1018" stroke-width="0.7"/>`;
+    // 标签默认放右边；靠右半边的标记改放左边，避免越界
+    const right = x < 66;
+    const tx = right ? x + 4.6 : x - 4.6;
+    const anchor = right ? 'start' : 'end';
+    const txt = label ? `<text x="${tx}" y="${y + 1.5}" font-size="4.5" fill="#cfd6e4" text-anchor="${anchor}">${label}</text>` : '';
+    return `<g>${ring}${txt}</g>`;
+  }).join('');
+  byId('minimap').innerHTML = MAP_STATIC + dots;
+}
+
+/* ============================================================
+   状态
+   ============================================================ */
+let queue = [], idx = 0, score = 0, streak = 0, bestStreak = 0;
+let curOpts = [];   // 本题选项的显示顺序（每题打乱，避免"总选 A"就能得分）
+let limitMs = 8000, answered = false, chosenIdx = -1;
+let remainMs = 0, startedAt = 0, rafId = 0;
+let log = [];   // 每题作答记录
+
+/* ============================================================
+   流程
+   ============================================================ */
+function startGame(){
+  limitMs = parseInt(byId('selLimit').value, 10);
+  const count = parseInt(byId('selCount').value, 10);
+  const order = byId('selOrder').value;
+
+  let pool = shuffle(BANK);
+  if (order === 'cat'){
+    pool = BANK.slice().sort((a, b) => a.cat.localeCompare(b.cat, 'zh'));
+  }
+  queue = count > 0 ? pool.slice(0, count) : pool;
+
+  idx = 0; score = 0; streak = 0; bestStreak = 0; log = [];
+  byId('qTotal').textContent = queue.length;
+  byId('screen-start').classList.add('hidden');
+  byId('screen-end').classList.add('hidden');
+  byId('screen-game').classList.remove('hidden');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  answered = false;
+  chosenIdx = -1;
+  const s = queue[idx];
+
+  byId('qIndex').textContent = idx + 1;
+  byId('scoreVal').textContent = score;
+  byId('streakVal').textContent = streak >= 2 ? ('连对 ' + streak + ' 题') : '';
+  byId('catTag').textContent = s.cat;
+  byId('catTag').style.color = CAT_STYLE[s.cat] || 'var(--gold)';
+  byId('catTag').style.borderColor = 'transparent';
+  byId('timeTag').textContent = '对局时间 ' + s.t;
+  byId('qTitle').textContent = s.q;
+  byId('qDesc').textContent = s.d;
+  byId('feedback').innerHTML = '';
+  renderMap(s.m);
+
+  // 选项顺序每题随机打乱：题库里最优解的原始位置不该被玩家利用
+  curOpts = shuffle(s.opts);
+  byId('options').innerHTML = curOpts.map((o, i) =>
+    `<button class="opt" data-i="${i}"><span class="key">${KEYCHAR[i]}</span><span class="txt">${o.t}</span></button>`
+  ).join('');
+  byId('options').querySelectorAll('.opt').forEach(b => {
+    b.addEventListener('click', () => choose(parseInt(b.dataset.i, 10)));
+  });
+
+  startTimer();
+}
+
+function startTimer(){
+  cancelAnimationFrame(rafId);
+  const bar = byId('timerBar');
+  const txt = byId('timerText');
+
+  if (!limitMs){                       // 不限时
+    bar.style.transform = 'scaleX(1)';
+    bar.style.background = 'var(--green)';
+    txt.textContent = '不限时';
+    return;
+  }
+  startedAt = performance.now();
+  remainMs = limitMs;
+  // 先同步画一次初始状态：否则在第一帧 rAF 之前，倒计时条和秒数都是空的
+  bar.style.transform = 'scaleX(1)';
+  bar.style.background = 'var(--green)';
+  txt.textContent = (limitMs / 1000).toFixed(1) + ' 秒';
+  const loop = () => {
+    remainMs = Math.max(0, limitMs - (performance.now() - startedAt));
+    const p = remainMs / limitMs;
+    bar.style.transform = 'scaleX(' + p + ')';
+    bar.style.background = p > 0.5 ? 'var(--green)' : p > 0.25 ? 'var(--yellow)' : 'var(--red)';
+    txt.textContent = (remainMs / 1000).toFixed(1) + ' 秒';
+    if (remainMs <= 0){ choose(-1); return; }
+    rafId = requestAnimationFrame(loop);
+  };
+  rafId = requestAnimationFrame(loop);
+}
+
+function choose(i){
+  if (answered) return;
+  answered = true;
+  cancelAnimationFrame(rafId);
+  chosenIdx = i;
+
+  const s = queue[idx];
+  const opts = curOpts;                          // 当前显示的选项顺序（已打乱）
+  const bestIdx = opts.findIndex(o => o.v === 2);
+  const v = i >= 0 ? opts[i].v : -1;             // -1 = 超时
+  const ratio = limitMs ? remainMs / limitMs : 0;
+
+  let gained = 0;
+  if (v === 2){
+    streak++;
+    gained = 100 + Math.round(50 * ratio) + Math.min(streak, 5) * 10;
+  } else if (v === 1){
+    streak = 0;
+    gained = 40;
+  } else {
+    streak = 0;
+    gained = 0;
+  }
+  score += gained;
+  bestStreak = Math.max(bestStreak, streak);
+
+  // disp：错题复盘要还原玩家当时看到的选项顺序
+  log.push({ s, i, v, bestIdx, gained, timeout: i < 0, disp: opts });
+
+  // 选项着色
+  byId('options').querySelectorAll('.opt').forEach((b, k) => {
+    b.disabled = true;
+    const ov = opts[k].v;
+    b.classList.add(ov === 2 ? 'best' : ov === 1 ? 'ok' : 'bad');
+    if (k === i) b.classList.add('pick');
+    const tag = document.createElement('span');
+    tag.className = 'mark';
+    tag.textContent = k === i ? '你选的' : (ov === 2 ? '最优' : ov === 1 ? '可行' : '失误');
+    b.appendChild(tag);
+  });
+
+  // 反馈面板
+  const cls = v === 2 ? 'good' : v === 1 ? 'mid' : 'bad';
+  const head = v === 2 ? '✓ 最优解' : v === 1 ? '△ 可行，但不是最优' : (i < 0 ? '⏱ 超时未作答' : '✗ 这一手会亏节奏');
+  let html = '<div class="fb"><div class="verdict ' + cls + '">' + head +
+             '<span class="gain">+' + gained + ' 分</span></div>';
+
+  if (i >= 0){
+    html += '<div class="row"><div class="lbl">你选的 · ' + KEYCHAR[i] + '</div><div class="body' +
+            (v === 2 ? ' bestline' : '') + '">' + opts[i].why + '</div></div>';
+  }
+  if (v !== 2){
+    html += '<div class="row"><div class="lbl">最优解 · ' + KEYCHAR[bestIdx] + '　' +
+            opts[bestIdx].t + '</div><div class="body bestline">' + opts[bestIdx].why + '</div></div>';
+  }
+  html += '<div class="nextline"><span class="kbd">按 空格 / 回车 继续</span>' +
+          '<button id="btnNext" class="btn">' + (idx + 1 < queue.length ? '下一题' : '看复盘报告') + '</button></div></div>';
+  byId('feedback').innerHTML = html;
+  byId('btnNext').addEventListener('click', next);
+
+  byId('scoreVal').textContent = score;
+  byId('streakVal').textContent = streak >= 2 ? ('连对 ' + streak + ' 题') : '';
+  byId('btnNext').focus();
+}
+
+function next(){
+  if (!answered) return;
+  idx++;
+  if (idx >= queue.length) showReport();
+  else renderQuestion();
+}
+
+/* ============================================================
+   报告
+   ============================================================ */
+function gradeOf(acc){
+  if (acc >= 0.9) return ['S', '判断力已经是打野的第一梯队了——你几乎每道题都做了对的选择。'];
+  if (acc >= 0.75) return ['A', '决策质量相当高。剩下的失误多半集中在少数几类情境上，针对性练一下就能补上。'];
+  if (acc >= 0.6) return ['B', '基础判断没问题，但在信息不足或压力大的情境下容易选错。这正是真实对局里最吃亏的地方。'];
+  if (acc >= 0.45) return ['C', '你有相当一部分决策是「凭感觉」而不是「凭信息」。先练一件事：动手前先问对面打野在哪。'];
+  return ['D', '目前的决策倾向偏保守或偏冲动（报告下方会告诉你是哪一种）。先把「对面打野位置」作为每次决策的第一问。'];
+}
+
+function showReport(){
+  const total = log.length;
+  const nBest = log.filter(r => r.v === 2).length;
+  const nOk   = log.filter(r => r.v === 1).length;
+  const nBad  = log.filter(r => r.v === 0).length;
+  const nTime = log.filter(r => r.timeout).length;
+  const acc = total ? nBest / total : 0;
+  const [grade, gtxt] = gradeOf(acc);
+  const maxScore = total * 160;
+
+  // 分类统计
+  const byCat = {};
+  log.forEach(r => {
+    const c = r.s.cat;
+    byCat[c] = byCat[c] || { n:0, best:0, ok:0, bad:0 };
+    byCat[c].n++;
+    if (r.v === 2) byCat[c].best++;
+    else if (r.v === 1) byCat[c].ok++;
+    else byCat[c].bad++;
+  });
+  const cats = Object.keys(byCat).sort((a, b) => (byCat[a].best / byCat[a].n) - (byCat[b].best / byCat[b].n));
+
+  let html = '<div class="scorebig">' + score + ' <span style="font-size:18px;color:var(--dim)">/ ' + maxScore + '</span></div>';
+  html += '<div class="grade">评级 <b style="color:var(--gold)">' + grade + '</b>　' + gtxt + '</div>';
+
+  html += '<div class="grid">' +
+    stat('最优解', nBest + ' / ' + total, 'var(--green)') +
+    stat('可行但不最优', nOk, 'var(--yellow)') +
+    stat('失误', nBad, 'var(--red)') +
+    stat('超时', nTime, 'var(--dim)') +
+    stat('最长连对', bestStreak + ' 题', 'var(--gold)') +
+    '</div>';
+
+  html += '<div class="secTitle">各类情境的判断准确率</div><div class="bars">';
+  cats.forEach(c => {
+    const d = byCat[c];
+    const p = Math.round(d.best / d.n * 100);
+    const col = p >= 75 ? 'var(--green)' : p >= 50 ? 'var(--yellow)' : 'var(--red)';
+    html += '<div class="barrow"><span class="nm">' + c + '</span>' +
+            '<span class="track"><span class="fill" style="width:' + Math.max(p, 2) + '%;background:' + col + '"></span></span>' +
+            '<span class="pc">' + p + '% · ' + d.best + '/' + d.n + '</span></div>';
+  });
+  html += '</div>';
+
+  // 针对性建议：找出最弱的一类
+  html += '<div class="secTitle">给你的针对性建议</div>';
+  const weak = cats.filter(c => byCat[c].n >= 2)[0];
+  const advice = [];
+  if (weak){
+    advice.push('你最弱的一类是 <b>' + weak + '</b>（' + byCat[weak].best + '/' + byCat[weak].n +
+                ' 道最优）。下一轮重点盯这一类，做完题回来重看这几道的解释。');
+  }
+  if (nBad >= Math.ceil(total * 0.3)){
+    advice.push('失误率偏高。建议把限时调成 <b>12 秒</b> 或 <b>不限时</b>，先把"想清楚"练成习惯，再压缩时间。');
+  } else if (nTime > 0){
+    advice.push('有 <b>' + nTime + '</b> 道题超时。真实对局里没有无限时间——犹豫本身就是一个决策。');
+  } else if (acc >= 0.75){
+    advice.push('准确率已经不错了，试试把限时压到 <b>6 秒</b>：同样的判断力，在更短的时间内做出来才是真本事。');
+  }
+  const avgBad = log.filter(r => r.v !== 2).length;
+  if (avgBad === 0) advice.push('这一轮全部命中最优解。建议增加题量或缩短限时，继续加压。');
+  html += '<div class="advice">' + advice.map((a, i) => (i ? '<br>' : '') + '· ' + a).join('') + '</div>';
+
+  // 错题复盘
+  const wrongs = log.filter(r => r.v !== 2);
+  if (wrongs.length){
+    html += '<div class="secTitle">错题复盘（' + wrongs.length + ' 道）</div><div class="wrongs">';
+    wrongs.forEach((r, n) => {
+      const s = r.s, o = r.disp;   // o = 玩家当时看到的选项顺序
+      const yours = r.timeout ? '（超时未作答）' : (KEYCHAR[r.i] + '　' + o[r.i].t);
+      html += '<details><summary>第 ' + (log.indexOf(r) + 1) + ' 题 · [' + s.cat + '] ' + s.q + '</summary>' +
+              '<div class="ans">' +
+              '<div style="margin-bottom:8px" class="yours">你选的：' + yours + '</div>' +
+              (r.timeout ? '' : '<div style="margin-bottom:10px;color:#b9c2d2">' + o[r.i].why + '</div>') +
+              '<div class="right">最优解：' + KEYCHAR[r.bestIdx] + '　' + o[r.bestIdx].t + '</div>' +
+              '<div style="color:#b9c2d2;margin-top:6px">' + o[r.bestIdx].why + '</div>' +
+              '</div></details>';
+    });
+    html += '</div>';
+  }
+
+  byId('report').innerHTML = html;
+  byId('screen-game').classList.add('hidden');
+  byId('screen-end').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function stat(k, v, color){
+  return '<div class="stat"><div class="k">' + k + '</div><div class="v" style="color:' + color + '">' + v + '</div></div>';
+}
+
+/* ============================================================
+   交互绑定
+   ============================================================ */
+byId('btnStart').addEventListener('click', startGame);
+byId('btnRestart').addEventListener('click', startGame);
+byId('btnHome').addEventListener('click', () => {
+  byId('screen-end').classList.add('hidden');
+  byId('screen-start').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+document.addEventListener('keydown', e => {
+  if (byId('screen-game').classList.contains('hidden')) return;
+  if (e.key === ' ' || e.key === 'Enter'){
+    if (answered){ e.preventDefault(); next(); }
+    return;
+  }
+  if (!answered && e.key >= '1' && e.key <= '4'){
+    const i = parseInt(e.key, 10) - 1;
+    if (i < curOpts.length) choose(i);
+  }
+});
+</script>
+</body>
+</html>
